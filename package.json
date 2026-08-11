@@ -1,0 +1,43 @@
+{
+  "name": "foundry-orchestration-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Supervisor-pattern multi-agent orchestration runtime, deployed as a Microsoft Foundry hosted agent",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx --env-file-if-exists=.env watch src/server.ts",
+    "dev:offline": "tsx src/dev-server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "docker:build": "docker build --platform linux/amd64 -t foundry-orchestration-lab:local .",
+    "docker:run": "docker run --rm -p 8088:8088 --env-file .env foundry-orchestration-lab:local"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.5.0",
+    "@azure/monitor-opentelemetry-exporter": "^1.0.0-beta.32",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/resources": "^2.10.0",
+    "@opentelemetry/sdk-trace-node": "^2.10.0",
+    "@opentelemetry/semantic-conventions": "^1.43.0",
+    "express": "^4.21.2",
+    "mongodb": "^7.5.0",
+    "openai": "^4.77.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "@types/supertest": "^6.0.2",
+    "@types/ws": "^8.5.13",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.10"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  // Production build. Excludes tests and test doubles. The offline stub server IS
+  // included, so the published image runs standalone without an API key.
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts",
+    "src/testing"
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "customer": {
+    "id": "cust-001",
+    "name": "Sam Rivera"
+  },
+  "accounts": [
+    {
+      "id": "acc-current",
+      "name": "Current",
+      "sortCode": "04-00-72",
+      "numberMasked": "****4417",
+      "currency": "GBP",
+      "balanceMinor": 124000,
+      "availableMinor": 124000,
+      "overdraftLimitMinor": 50000
+    },
+    {
+      "id": "acc-savings",
+      "name": "Savings",
+      "sortCode": "04-00-72",
+      "numberMasked": "****9021",
+      "currency": "GBP",
+      "balanceMinor": 850000,
+      "availableMinor": 850000,
+      "overdraftLimitMinor": 0
+    }
+  ],
+  "payees": [
+    { "id": "payee-alice", "name": "Alice Chen", "aliases": ["alice"], "sortCode": "20-31-05", "numberMasked": "****1188" },
+    { "id": "payee-bob", "name": "Bob Okafor", "aliases": ["bob"], "sortCode": "60-16-02", "numberMasked": "****7734" },
+    { "id": "payee-card", "name": "Aurora Credit Card", "aliases": ["credit card", "card", "aurora"], "sortCode": "00-00-00", "numberMasked": "****5590" }
+  ],
+  "transactions": [
+    { "id": "txn-001", "accountId": "acc-current", "date": "2026-07-30", "description": "Riverside Coffee", "amountMinor": -420, "category": "eating_out" },
+    { "id": "txn-002", "accountId": "acc-current", "date": "2026-07-30", "description": "Metro Transit", "amountMinor": -275, "category": "transport" },
+    { "id": "txn-003", "accountId": "acc-current", "date": "2026-07-29", "description": "Greenline Grocers", "amountMinor": -6318, "category": "groceries" },
+    { "id": "txn-004", "accountId": "acc-current", "date": "2026-07-28", "description": "Salary — Kore Ltd", "amountMinor": 285000, "category": "income" },
+    { "id": "txn-005", "accountId": "acc-current", "date": "2026-07-27", "description": "Aurora Credit Card payment", "amountMinor": -40000, "category": "transfer" },
+    { "id": "txn-006", "accountId": "acc-current", "date": "2026-07-26", "description": "Northgate Rent", "amountMinor": -132500, "category": "housing" },
+    { "id": "txn-007", "accountId": "acc-current", "date": "2026-07-25", "description": "Lumen Energy", "amountMinor": -8940, "category": "utilities" },
+    { "id": "txn-008", "accountId": "acc-current", "date": "2026-07-24", "description": "Pixel Streaming", "amountMinor": -1099, "category": "subscriptions" },
+    { "id": "txn-009", "accountId": "acc-savings", "date": "2026-07-28", "description": "Standing order from Current", "amountMinor": 25000, "category": "transfer" },
+    { "id": "txn-010", "accountId": "acc-savings", "date": "2026-06-28", "description": "Standing order from Current", "amountMinor": 25000, "category": "transfer" },
+    { "id": "txn-011", "accountId": "acc-savings", "date": "2026-06-30", "description": "Interest", "amountMinor": 1204, "category": "interest" },
+    { "id": "txn-012", "accountId": "acc-current", "date": "2026-07-22", "description": "Harbour Books", "amountMinor": -2350, "category": "shopping" }
+  ],
+  "loanProducts": [
+    {
+      "id": "loan-personal",
+      "name": "Personal Loan",
+      "aprPercent": 6.9,
+      "minAmountMinor": 100000,
+      "maxAmountMinor": 2500000,
+      "minTermMonths": 12,
+      "maxTermMonths": 60,
+      "minMonthlyIncomeMinor": 150000
+    },
+    {
+      "id": "loan-auto",
+      "name": "Car Finance",
+      "aprPercent": 5.4,
+      "minAmountMinor": 300000,
+      "maxAmountMinor": 4000000,
+      "minTermMonths": 24,
+      "maxTermMonths": 72,
+      "minMonthlyIncomeMinor": 180000
+    },
+    {
+      "id": "loan-home-improve",
+      "name": "Home Improvement Loan",
+      "aprPercent": 4.8,
+      "minAmountMinor": 500000,
+      "maxAmountMinor": 7500000,
+      "minTermMonths": 36,
+      "maxTermMonths": 120,
+      "minMonthlyIncomeMinor": 250000
+    }
+  ]
+}

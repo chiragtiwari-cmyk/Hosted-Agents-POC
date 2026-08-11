@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+.session-state/
+
+# built image tarball — too large for git
+dist-image/*.tar.gz

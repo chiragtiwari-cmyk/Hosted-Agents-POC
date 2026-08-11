@@ -1,0 +1,1108 @@
+/* Kore.ai multi-agent orchestration lab — workshop UI.
+   No framework, no build step. Light and dark both supported.
+
+   Note: uses the Kore.ai name with a neutral geometric mark rather than the
+   official logo, which isn't bundled here. Swap `.mark` for the real asset if
+   this is ever shown externally. */
+
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --ink: #16191d;
+  --ink-soft: #5b6472;
+  --line: #e3e6ea;
+  /* Kore.ai brand-ish indigo/violet, distinct from the previous blue. */
+  --accent: #5b3df5;
+  --accent-soft: #eeeaff;
+  --ok: #1a7f4b;
+  --warn: #b26b00;
+  --err: #c0392b;
+  --supervisor: #5b3df5;
+  --balance: #1a7f4b;
+  --payments: #b26b00;
+  --loans: #0b7d8c;
+  --radius: 10px;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1216;
+    --panel: #171b21;
+    --ink: #e8ebef;
+    --ink-soft: #98a2b0;
+    --line: #262c35;
+    --accent: #a693ff;
+    --accent-soft: #221c3a;
+    --ok: #5fd39b;
+    --warn: #e0a960;
+    --err: #ef8377;
+    --supervisor: #a693ff;
+    --balance: #5fd39b;
+    --payments: #e0a960;
+    --loans: #5ec8d8;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/*
+ * The page itself must never scroll — only the panes inside it do. So body is
+ * pinned to exactly the viewport height with overflow hidden, and every
+ * descendant that needs to scroll declares `overflow-y: auto` plus
+ * `min-height: 0` (without which a flex child refuses to shrink below its
+ * content and pushes the layout past the viewport instead).
+ *
+ * `100dvh` handles mobile browser chrome that resizes on scroll; the 100vh
+ * fallback is for browsers without dvh support.
+ */
+html {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Fixed-height chrome: never shrink, never grow. */
+.topbar,
+.sessionbar,
+.ledger {
+  flex: 0 0 auto;
+}
+
+/*
+ * The collapsible drawers can be tall. Cap them and let them scroll internally
+ * rather than shoving the chat off-screen. Only one is ever open at a time
+ * (enforced in app.js), so this budget doesn't have to be shared.
+ */
+/*
+ * Drawer height is the only lever that protects the chat log. A min-height on
+ * the panes makes things worse: it inflates the grid, and the log absorbs the
+ * squeeze anyway (measured — at 560px tall it went from 56px down to 38px).
+ *
+ * So cap the drawer generously on tall viewports and hard on short ones, and let
+ * it scroll internally.
+ */
+.manager-panel,
+.files-panel {
+  flex: 0 1 auto;
+  max-height: min(38vh, 340px);
+  overflow-y: auto;
+}
+
+/*
+ * On a short viewport the fixed chrome already claims ~317px (measured: 115px of
+ * topbar + session bar above the chat, 202px of composer + quick buttons + speak
+ * toggle + ledger below it). A stacked drawer therefore leaves the chat log
+ * unusable — 28px at 560px tall. Below the threshold the drawer overlays the
+ * layout instead of displacing it, sitting exactly between the two chrome bands
+ * so the composer and the ledger both stay reachable.
+ *
+ * The offsets are measured values, kept in variables so they stay honest if the
+ * chrome changes.
+ */
+@media (max-height: 720px) {
+  :root {
+    /* Measured: the session bar ends 114px down, and the composer's top edge sits
+       219px above the viewport bottom (constant across heights, since both bands
+       are fixed-size). A couple of px of slack keeps borders from touching. */
+    --chrome-above-chat: 116px;
+    --chrome-below-chat: 223px;
+  }
+
+  body {
+    position: relative;
+  }
+
+  .manager-panel,
+  .files-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--chrome-above-chat);
+    bottom: var(--chrome-below-chat);
+    z-index: 20;
+    max-height: none;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 12px 28px rgb(0 0 0 / 22%);
+  }
+}
+
+/* ---------- top bar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mark {
+  font-size: 26px;
+  color: var(--accent);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.dot-ai {
+  color: var(--accent);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.iso {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.iso select {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 3px 6px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.conn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-family: var(--mono);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+.dot.on {
+  background: var(--ok);
+}
+.dot.off {
+  background: var(--err);
+}
+
+/* ---------- session bar ---------- */
+
+.sessionbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 8px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.sess-field {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.sess-label {
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
+}
+
+.sess-field code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 2px 6px;
+  max-width: 26ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pill {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.pill.active {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.pill.idle,
+.pill.stopped {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.sess-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+/* ---------- session manager ---------- */
+
+.manager-panel {
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 20px 16px;
+}
+
+.manager-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.manager-head .ghost:last-child {
+  margin-left: auto;
+}
+
+.admin-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.manager-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.manager-table th {
+  text-align: left;
+  padding: 7px 10px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.manager-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.manager-table tr:last-child td {
+  border-bottom: none;
+}
+
+.manager-table tr.current td {
+  background: var(--accent-soft);
+}
+
+.manager-table tr.current .sid::after {
+  content: " ← current";
+  color: var(--accent);
+  font-size: 10px;
+}
+
+.manager-table .empty-row td {
+  color: var(--ink-soft);
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  padding: 14px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.row-actions button {
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-family: var(--mono);
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.row-actions button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.row-actions button.danger:hover {
+  color: var(--err);
+  border-color: var(--err);
+}
+
+.history-view {
+  margin-top: 14px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
+
+.history-list {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+.history-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.history-list .role {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  flex: 0 0 5.5em;
+}
+
+.history-list .content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- files drawer ---------- */
+
+.files-panel {
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 20px 14px;
+}
+
+.files-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.files-head .ghost {
+  margin-left: auto;
+}
+
+.files-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.files-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.files-list .fname {
+  color: var(--accent);
+}
+
+.files-list .fsize {
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.files-list .empty-files {
+  color: var(--ink-soft);
+  font-family: system-ui, sans-serif;
+}
+
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.upload-row input[type="file"] {
+  font: inherit;
+  color: var(--ink-soft);
+}
+
+/* ---------- layout ---------- */
+
+.layout {
+  /* Absorbs whatever height the fixed chrome and drawers leave. min-height: 0
+     is load-bearing — without it this grid won't shrink and the page scrolls. */
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 16px;
+  padding: 16px 20px;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    /* Narrow screens stack the panes, which genuinely needs more height than
+       the viewport — so this is the one place the layout itself may scroll. */
+    grid-template-columns: 1fr;
+    align-items: start;
+    overflow-y: auto;
+  }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-soft);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-family: var(--mono);
+}
+
+/* ---------- chat ---------- */
+
+/* The chat log: the main scroll region. */
+.messages {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  /* 0, not 240px — a floor here would overflow a short viewport and reintroduce
+     page scrolling. */
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.msg {
+  max-width: 84%;
+  padding: 9px 12px;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.msg.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+
+.msg.bot {
+  align-self: flex-start;
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 3px;
+}
+
+/* ---------- markdown inside chat bubbles ---------- */
+
+/* Rendered bubbles hold block elements, so the bubble stops pre-wrapping — but a
+   still-streaming bubble is raw text and needs its newlines preserved. */
+.msg.bot {
+  white-space: normal;
+}
+
+.msg.bot.pending {
+  white-space: pre-wrap;
+}
+
+.md-p {
+  margin: 0 0 8px;
+}
+
+.msg .md-p:last-child,
+.msg .md-list:last-child {
+  margin-bottom: 0;
+}
+
+.md-heading {
+  display: block;
+  margin: 0 0 6px;
+}
+
+.md-list {
+  margin: 0 0 8px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.msg code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ink-soft) 16%, transparent);
+}
+
+.msg strong {
+  font-weight: 650;
+}
+
+.msg.bot.pending::after {
+  content: "▋";
+  animation: blink 1s steps(2) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.msg.err {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--err);
+  color: var(--err);
+  font-size: 13px;
+}
+
+/* Panel chrome holds its size; the log above it does the scrolling. */
+.panel-head,
+.composer,
+.quick,
+.speak-toggle {
+  flex: 0 0 auto;
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.composer input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.composer input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.send {
+  padding: 9px 16px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mic {
+  width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.mic.listening {
+  background: var(--err);
+  border-color: var(--err);
+  color: #fff;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.mic.unsupported {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@keyframes pulse {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.ghost {
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.ghost:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+}
+
+.ghost.small {
+  font-size: 11px;
+  font-family: var(--mono);
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 14px 10px;
+}
+
+.quick button {
+  padding: 4px 10px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-family: var(--mono);
+}
+
+.quick button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.speak-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px 13px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* ---------- trace ---------- */
+
+/* The trace tree: the other scroll region. */
+.trace-body {
+  padding: 12px 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+
+.empty {
+  color: var(--ink-soft);
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  margin: 0;
+}
+
+.turn-group {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.turn-group:last-child {
+  border-bottom: none;
+}
+
+.turn-label {
+  color: var(--ink-soft);
+  font-size: 11px;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.step {
+  display: flex;
+  /* center, not baseline: the waterfall bar has no text baseline to align to. */
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+/* The step name column is fixed-width so bars line up across rows. */
+.step .name {
+  flex: 0 0 auto;
+  min-width: 15ch;
+}
+
+.step[data-depth="1"] .name {
+  min-width: 13ch;
+}
+
+.step[data-depth="2"] .name {
+  min-width: 11ch;
+}
+
+.step[data-depth="1"] {
+  padding-left: 18px;
+}
+
+.step[data-depth="2"] {
+  padding-left: 36px;
+}
+
+.step .glyph {
+  color: var(--ink-soft);
+}
+
+.step .name {
+  font-weight: 600;
+}
+
+.step[data-agent="supervisor"] .name {
+  color: var(--supervisor);
+}
+.step[data-agent="balance"] .name {
+  color: var(--balance);
+}
+.step[data-agent="payments"] .name {
+  color: var(--payments);
+}
+.step[data-agent="loans"] .name {
+  color: var(--loans);
+}
+
+/*
+ * Waterfall track. Durations alone imply sequence — two parallel specialists show
+ * two long numbers that sum to more than the turn took. The bar is positioned by
+ * start time, so concurrent work visibly overlaps.
+ */
+.step .track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 40px;
+  height: 6px;
+  margin: 0 8px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink-soft) 18%, transparent);
+  overflow: hidden;
+}
+
+.step .bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  background: currentColor;
+  transition: left 0.15s ease, width 0.15s ease;
+}
+
+.step[data-agent="supervisor"] .bar {
+  color: var(--supervisor);
+}
+.step[data-agent="balance"] .bar {
+  color: var(--balance);
+}
+.step[data-agent="payments"] .bar {
+  color: var(--payments);
+}
+.step[data-agent="loans"] .bar {
+  color: var(--loans);
+}
+.step[data-agent="other"] .bar {
+  color: var(--ink-soft);
+}
+
+.step.running .bar {
+  opacity: 0.55;
+}
+
+.step.error .bar {
+  color: var(--err);
+}
+
+.step .dur {
+  color: var(--ink-soft);
+  font-size: 11px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 6ch;
+  text-align: right;
+}
+
+.turn-total {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ink-soft);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.turn-label {
+  display: flex;
+  align-items: baseline;
+}
+
+.step.running .name::after {
+  content: " …";
+  color: var(--ink-soft);
+}
+
+.step.error .name {
+  color: var(--err);
+}
+
+.step {
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.step:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.step:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------- expandable step details ---------- */
+
+.step-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 6px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--line);
+  font-size: 11px;
+}
+
+/* `display: flex` overrides the HTML `hidden` attribute, which is only
+   `display: none` at UA-stylesheet priority. Without this the panels are always
+   visible and the collapse toggle does nothing. */
+.step-details[hidden] {
+  display: none;
+}
+
+.step-details[data-depth="1"] {
+  margin-left: 18px;
+}
+.step-details[data-depth="2"] {
+  margin-left: 36px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.detail-key {
+  /* Wide enough for gen_ai.operation.name without breaking mid-word. */
+  flex: 0 0 21ch;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-val {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-row.commit .detail-val {
+  color: var(--ok);
+}
+
+.detail-row.stage .detail-val {
+  color: var(--warn);
+}
+
+.detail-row.error .detail-val {
+  color: var(--err);
+}
+
+.detail-row.muted .detail-val {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.note {
+  padding-left: 26px;
+  color: var(--ink-soft);
+  font-size: 11.5px;
+}
+
+.note.commit {
+  color: var(--ok);
+}
+
+.note.stage {
+  color: var(--warn);
+}
+
+/* ---------- ledger strip ---------- */
+
+.ledger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 20px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.ledger-accounts {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.acct {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.acct .nm {
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.acct .bal {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  transition: color 0.25s;
+}
+
+.acct .bal.flash {
+  color: var(--ok);
+}
+
+.acct .bal.negative {
+  color: var(--err);
+}
+
+.acct .avail {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  font-family: var(--mono);
+}
+
+/* A submitted loan application, shown beside the balances as session state. */
+.acct.application {
+  padding-left: 16px;
+  border-left: 2px solid var(--loans);
+}
+
+.acct.application .bal {
+  color: var(--loans);
+  font-size: 14px;
+}
