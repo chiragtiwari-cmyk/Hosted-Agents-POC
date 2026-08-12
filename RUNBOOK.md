@@ -193,10 +193,13 @@ docker volume rm folab-home        # and its state, if you want it gone
 
 ---
 
-## What this is not
+## Deployment
 
-It implements Foundry's protocols and reproduces its session semantics locally.
-**It has never been deployed to Foundry.** If asked in the room, say so — and note
-that roughly half of what is here (session APIs, protocol surfaces, the MCP
-server) is scaffolding the platform replaces. What transfers is the supervisor
-loop, the agent contract, the MCP **client**, and the guard patterns.
+This project has been **deployed and verified on Microsoft Foundry** as a hosted
+agent. See `DEPLOYMENT.md` for the full walkthrough — container build, `azd`
+deployment, RBAC, MongoDB integration, and OTel tracing.
+
+Note that roughly half of what runs locally (session APIs, protocol surfaces,
+the MCP server) is scaffolding the platform replaces. What transfers to
+production is the supervisor loop, the agent contract, the MCP **client**, and
+the guard patterns.
